@@ -1,0 +1,127 @@
+// Copyright 2021 Dell Inc. or its subsidiaries. All Rights Reserved.
+//
+// This file was originally based on CSD templates licensed to Cloudera, Inc.
+// under the Apache License, Version 2.0. See NOTICE for details.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+{
+  "name" : "POWERSCALE",
+  "label" : "Dell PowerScale",
+  "description" : "Dell PowerScale is a distributed scale-out filesystem.",
+  "version" : "1.1.0",
+  "compatibility" : { "cdhVersion" : { "min" : "7.1.7"} },
+  "runAs" : {
+    "user" : "hdfs",
+    "group" : "hdfs"
+  },
+  "parcel": {
+     "requiredTags": [
+       "cdh"
+     ]
+   },
+  "inExpressWizard" : true,
+  "icon" : "images/icon.png",
+  "parameters" : [
+    {
+      "name" : "default_fs_name",
+      "label" : "Default File System URI",
+      "description" : "The full file system URI, to be emitted as 'fs.default.name'",
+      "required" : "true",
+      "type" : "string",
+      "configurableInWizard" : true
+    },
+    {
+      "name" : "webhdfs_url",
+      "label" : "WebHDFS URL",
+      "description" : "Full URL for the Web Interface of PowerScale service.",
+      "required" : "false",
+      "type" : "string",
+      "configurableInWizard" : true
+    },
+    {
+      "name" : "kerberos_authentication",
+      "label" : "Kerberos Authentication",
+      "description" : "Whether Kerberos is enabled for authentication",
+      "required" : "true",
+      "type" : "boolean",
+      "default" : "false"
+    },
+    {
+      "name" : "hadoop.security.token.service.use_ip",
+      "label" : "hadoop.security.token.service.use_ip",
+      "description" : "Controls whether tokens always use IP addresses",
+      "required" : "false",
+      "type" : "boolean",
+      "configName" : "hadoop.security.token.service.use_ip",
+      "default" : "false"
+    }
+  ],
+  "externalKerberosPrincipals" : [
+    {
+      "name" : "isilon_hdfs_principal",
+      "primary" : "hdfs"
+    }
+  ],
+  "gateway" : {
+    "alternatives" : {
+      "name" : "hadoop-conf",
+      "priority" : 90,
+      "linkRoot" : "/etc/hadoop"
+    },
+    "parameters": [
+      {
+          "name": "dfs_client_read_shortcircuit",
+          "label": "Enable HDFS Short-Circuit Reads",
+          "description": "Whether the HDFS short-circuit reads feature is enabled.",
+          "configName": "dfs.client.read.shortcircuit",
+          "required": "true",
+          "type": "boolean",
+          "default": "false"
+      }
+    ],
+    "configWriter" : {
+      "generators" : [
+        {
+          "filename" : "hadoop-conf/hdfs-site.xml",
+          "configFormat" : "hadoop_xml",
+          "includedParams" : [
+            "dfs_client_read_shortcircuit"
+          ],
+          "kerberosPrincipals" : [
+            {
+              "principalName" : "isilon_hdfs_principal",
+              "propertyName" : "dfs.namenode.kerberos.principal.pattern",
+              "instanceWildcard" : "*",
+              "external" : "true"
+            }
+          ]
+        },
+        {
+          "filename" : "hadoop-conf/core-site.xml",
+          "configFormat" : "hadoop_xml",
+          "includedParams" : [
+            "hadoop.security.token.service.use_ip"
+          ]
+        }
+      ]
+    }
+  },
+  "kerberos" : "${kerberos_authentication}",
+  "providesDfs" : {
+    "fileSystemUri" : "${default_fs_name}",
+    "webInterface" : "${webhdfs_url}"
+  },
+    "serviceDependencies" : [
+        {"name" : "KMS"}
+    ]
+}
